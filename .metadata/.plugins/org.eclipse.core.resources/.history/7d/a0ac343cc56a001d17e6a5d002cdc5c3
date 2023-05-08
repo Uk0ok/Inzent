@@ -1,0 +1,85 @@
+package com.ecm.util;
+import org.apache.log4j.Logger;
+
+import com.ecm.proc.Proc_Call;
+import com.ecm.proc.Proc_Main;
+import com.ecm.thread.ThreadPool;
+import com.windfire.apis.asysConnectData;
+import com.windfire.apis.asys.asysUsrElement;
+
+public class EcmUtil {
+
+	private static Logger log = Logger.getLogger("main");
+	public static asysConnectData con = null; 
+
+	public void download(String path, String elementId) throws Exception {
+		con = ThreadPool.xcon;
+		asysUsrElement uePage1 = new asysUsrElement(con);
+		uePage1.m_archive = "MAIN";
+		uePage1.m_elementId = Proc_Main.ECM_GW+"::"+elementId+"::IMAGE";
+		int ret = uePage1.getContent(path+"/"+elementId, "", "");
+		if (ret != 0) {
+			log.error("["+Thread.currentThread().getName() +"] Error - download, " + uePage1.m_lastError);
+		}
+		else {
+			log.debug("["+Thread.currentThread().getName() +"] Success - download, " + uePage1.m_elementId);
+		}
+	}
+
+	public static void create(String filepath, String classid ) throws Exception{
+		con = ThreadPool.xcon;
+		asysUsrElement uePage1 = new asysUsrElement(con);
+		uePage1.m_localFile = filepath;
+		uePage1.m_cClassId = classid; // .m_archive = "CAS_ARC";
+		uePage1.m_userSClass = "SUPER";
+		uePage1.m_eClassId = "IMAGE";
+		uePage1.m_descr= "TEST";
+		// ����� �ε��� ����
+//		uePage1.addIndexValue("DOC", "f1", "1");
+//		uePage1.addIndexValue("DOC", "f2", "1");
+
+		int ret = uePage1.create(Proc_Main.ECM_GW);	
+		// Check for errors - last message always in API object
+		if (ret != 0) {
+			log.error("["+Thread.currentThread().getName() +"] Error - create, " + uePage1.getLastError());
+		}
+		else {
+//			log.debug("["+Thread.currentThread().getName() +"] Success - create, " + uePage1.m_elementId);
+		}
+	}
+
+	public static void delete(String elementId) throws Exception {
+		con = ThreadPool.xcon;
+		asysUsrElement uePage1 = new asysUsrElement(con);
+		uePage1.m_elementId = Proc_Main.ECM_GW + "::" + elementId + "::IMAGE";
+		
+		int ret = uePage1.delete();
+		
+		if (ret != 0) {
+			log.error("Error - delete, " + uePage1.getLastError());
+		}
+		else {
+			log.debug("Success - delete, " + elementId);
+		}
+	}
+
+	public static void replace(String path, String elementId, String fnm, String fparm) throws Exception {
+		int ret = 0;
+		con = ThreadPool.xcon;
+		asysUsrElement uePage1 = new asysUsrElement(con);
+		uePage1.m_elementId = Proc_Main.ECM_GW + "::" + elementId + "::IMAGE";
+		if(fnm!=null&&fparm!=null) {
+			ret = uePage1.replaceContent(path, fnm, fparm);
+		}
+		else {
+			ret = uePage1.replaceContent(path, "", "");
+		}
+		
+		if (ret != 0) {
+			log.error("Error - replace, " + uePage1.getLastError());
+		}
+		else
+			log.debug("Success - replace, " + uePage1.m_elementId);
+
+	}
+}

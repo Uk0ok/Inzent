@@ -1,0 +1,51 @@
+package SamFile;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+/*
+ * 
+*/
+public class DBConnection {
+	
+	/*
+	 * Linux DB Connection
+	 */
+	public Connection XTORMConnection() {
+		Connection conn = null;
+		
+		try {
+			Class.forName(ReadProperties.DBDriver);
+			
+			conn = DriverManager.getConnection(ReadProperties.DBUrl, ReadProperties.DBId, ReadProperties.DBPwd);
+			conn.setAutoCommit(false);
+			
+		} catch (ClassNotFoundException e) {
+			System.err.println(e.getMessage());
+		} catch (SQLException e) {
+			System.err.println(e.getMessage());
+		}
+		return conn;
+	}
+	
+	/*
+	 * NT DB Connection
+	 */
+	public Connection XVARMConnection() {
+		Connection conn2 = null;
+		
+		try {
+			Class.forName(ReadProperties.DBDriver);
+			
+			conn2 = DriverManager.getConnection(ReadProperties.DBUrl, ReadProperties.DBId2, ReadProperties.DBPwd2);
+			conn2.setAutoCommit(false);
+			
+		} catch (ClassNotFoundException e) {
+			System.err.println(e.getMessage());
+		} catch (SQLException e) {
+			System.err.println(e.getMessage());
+		}
+		return conn2;
+	}
+}	

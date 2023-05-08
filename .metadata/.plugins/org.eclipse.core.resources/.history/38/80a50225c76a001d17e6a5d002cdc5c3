@@ -1,0 +1,157 @@
+package com.ecm.proc;
+
+import java.io.File;
+import java.util.ArrayList;
+
+import org.apache.log4j.Logger;
+
+import com.ecm.dto.ecmDto;
+import com.ecm.thread.ThreadPool;
+import com.ecm.util.DBUtil;
+import com.ecm.util.EcmUtil;
+
+public class Proc_exe {
+	private static Logger log = Logger.getLogger("main");
+
+	public int Proc_Download(ThreadPool tp) {
+		try {
+
+			ArrayList<ecmDto> ecmlist = new ArrayList<ecmDto>();
+
+			long stime = 0;
+			String dur = null;
+			
+			stime = System.currentTimeMillis();
+			
+			// Get ElementId from DB
+			ecmlist = DBUtil.getEid(Proc_Main.rownum);
+			
+			// if no elementid exist
+			if(ecmlist.isEmpty()) {
+				log.debug("No Download target File");
+				Proc_Call.stop_flag = true;
+			}
+			
+			dur = System.currentTimeMillis() - stime+"";		
+			log.debug("Select time : " + dur);
+			stime = System.currentTimeMillis();
+
+			// put ThreadPool queue
+			for (int i = 0; i < ecmlist.size(); i++) {				
+				tp.Tr_Download(ecmlist.get(i).getEid());
+			}
+			
+			dur = System.currentTimeMillis() - stime+"";
+			log.debug("download time : " + dur);
+
+		} catch (Exception e) {
+			log.error("Download Threading Error, " + e.getMessage());
+			Proc_Call.stop_flag = true;
+			return 1;
+		}
+		return 0;
+	}
+
+	public int Proc_Create(ThreadPool tp) {
+		try {
+			String cClass = "BASIC";
+			String GateWay = Proc_Main.ECM_GW; 
+			Proc_Create_Req(Proc_Main.CREATEDIR, cClass);
+			
+		} catch (Exception e) {
+			log.error("Create Threading Error, " + e.getMessage());
+			Proc_Call.stop_flag = true;
+			return 1;
+		}
+		return 0;
+	}
+
+	// replace target folder
+	public int Proc_Replace_folder(ThreadPool tp) {
+
+		// target dir
+		String dir = "";
+		File sfile = new File("");
+
+		// file list read
+		ArrayList<String> eidlist = new ArrayList<>();
+
+		// replace
+		for (int i = 0; i < eidlist.size(); i++) {
+			tp.Tr_Replace(eidlist.get(i));
+		}
+		
+		// update result set
+		DBUtil.updateStatus("", "");
+
+		return 0;
+	}
+
+	// replace target DB table
+	public int Proc_Replace_table(ThreadPool tp) {
+		// target data select
+		ArrayList<ecmDto> ecmlist = new ArrayList<ecmDto>();
+		ecmlist = DBUtil.getRepEid(Proc_Main.rownum);
+
+		if(ecmlist.isEmpty()) {
+			log.debug("No Replace target File");
+			Proc_Call.stop_flag = true;
+		}
+		
+		// replace
+		for(int i=0; i<ecmlist.size(); i++) {
+			tp.Tr_Replace(ecmlist.get(i).getEid());
+		}
+
+		// update result set
+		DBUtil.updateStatus("", "");
+		
+		return 0;
+	}
+	
+	public void Proc_Create_Req(String cDir, String cClass) {
+		
+		try {
+			File file = new File(cDir);
+			if (file.isDirectory()) {
+				File[] fList = file.listFiles();
+				for (File fi : fList) {
+					if (fi.isFile()) {
+						EcmUtil.create(fi.getAbsolutePath(), cClass);
+					} else if (fi.isDirectory()) {
+						Proc_Create_Req(fi.getAbsolutePath(), cClass);
+					}
+				}
+			} else {
+				EcmUtil.create(cDir, cClass);
+			}
+
+		} catch (Exception e) {
+			log.error("Create Thread Error, " + e.getMessage());
+			Proc_Call.stop_flag = true;
+		}
+	}
+
+	public int Proc_Delete() {
+		try {
+			ArrayList<ecmDto> ecmlist = new ArrayList<ecmDto>();
+			ecmlist = DBUtil.getDelEid(Proc_Main.rownum);
+			
+			if(ecmlist.isEmpty()) {
+				log.debug("No Delete target File");
+				Proc_Call.stop_flag = true;
+			}
+			// delete
+			for(int i=0; i<ecmlist.size(); i++) {
+				EcmUtil.delete(ecmlist.get(i).getEid());
+			}
+
+			
+		} catch (Exception e) {
+			log.error("Create Threading Error, " + e.getMessage());
+			Proc_Call.stop_flag = true;
+		}
+		return 0;
+	}
+
+}

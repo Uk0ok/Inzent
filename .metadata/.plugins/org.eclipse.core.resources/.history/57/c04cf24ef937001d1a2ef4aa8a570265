@@ -1,0 +1,45 @@
+package SamFile;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Properties;
+
+public class ReadProperties {
+	public static String DBDriver;
+	public static String DBUrl;
+	public static String DBId;
+	public static String DBPwd;
+	public static String DBId2;
+	public static String DBPwd2;
+	public static String Query1;
+	public static String Query2;
+	public static String Query3;
+	public static String Query4;
+	public static String FilePath;
+	public static String Delimiter;
+	
+	public static void read() {
+		Properties prop = new Properties();
+		
+		try {
+			prop.load(new FileInputStream("conf/conf.properties"));
+		} catch (FileNotFoundException e) {
+			System.err.println(e.getMessage());
+		} catch (IOException e) {
+			System.err.println(e.getMessage());
+		}
+		DBDriver = prop.getProperty("DBDRIVER");
+		DBUrl = prop.getProperty("DBURL");
+		DBId = prop.getProperty("DBID");
+		DBPwd = prop.getProperty("DBPWD");
+		DBId2 = prop.getProperty("DBID2");
+		DBPwd2 = prop.getProperty("DBPWD2");
+		Query1 = prop.getProperty("QUERY1");
+		Query2 = prop.getProperty("QUERY2");
+		Query3 = prop.getProperty("QUERY3");
+		Query4 = prop.getProperty("QUERY4");
+		FilePath = prop.getProperty("FILEPATH");
+		Delimiter = prop.getProperty("DELIMITER");
+	}
+}

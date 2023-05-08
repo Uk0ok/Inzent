@@ -1,0 +1,107 @@
+package com.ecm.proc;
+
+import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.apache.log4j.Logger;
+
+import com.ecm.thread.ThreadPool;
+import com.ecm.util.DBUtil;
+import com.windfire.apis.asysConnectData;
+
+public class Proc_Call {
+
+	private static Logger log = Logger.getLogger("main");
+	public static String stop_file = "./stop.flg";
+	public static boolean stop_flag = false;
+	public static ExecutorService executorService;
+
+	public void Proc_call() {
+		while (!stop_flag) {
+
+			try {
+				//disk size check
+				long freeSpace = new File(Proc_Main.disk).getFreeSpace();
+				if (freeSpace / 1024 / 1024 / 1024 > Proc_Main.diskSize) {
+
+					File sfile = new File(stop_file);
+					if (sfile.exists()) {
+						stop_flag = true;
+						break;
+					}
+
+//					// DB Connect
+//					con = DBUtil.getConnection(Proc_Main.DB_DRIVER, Proc_Main.DB_URL, Proc_Main.DB_ID, Proc_Main.DB_PW);
+//
+//					// ECM Connect
+//					xcon = new asysConnectData(Proc_Main.ECM_IP, Proc_Main.ECM_PORT, "TestImage", Proc_Main.ECM_ID,	Proc_Main.ECM_PW);
+					
+					// ThreadPool create
+					ThreadPool tp = new ThreadPool();
+					if (tp.xcon == null) {
+						log.debug("ECM connection error");
+						break;
+					}
+					
+					executorService = Executors.newFixedThreadPool(Proc_Main.threadcnt);
+
+					Proc_exe pexe = new Proc_exe();
+
+					if (Proc_Main.MODE.equals("DOWNLOAD")) {
+						pexe.Proc_Download(tp);
+					}
+/*
+					else if (Proc_Main.MODE.equals("REPLACE")) {
+//						pexe.Proc_Replace_folder(tp);
+						pexe.Proc_Replace_table(tp);
+					}
+
+					else if (Proc_Main.MODE.equals("DELETE")) {
+						pexe.Proc_Delete();
+					}
+
+					else if (Proc_Main.MODE.equals("CREATE")) {
+						for (int i = 0; i < 1000; i++) {
+							pexe.Proc_Create(tp);
+						}
+					} else {
+						Proc_Call.stop_flag = true;
+						log.error("Process Mode is wrong");
+					}
+*/
+					// ThreadPool close
+					tp.finish();
+
+					// DB commit
+					try {
+						con.commit();
+					} catch (SQLException e) {
+						log.error("DB commit is failed, " + e.getMessage());
+					}
+
+					// DB Close
+					DBUtil.ConnectionClose(con);
+					if (xcon != null) {
+						xcon.close();
+					}
+				} 
+				// if disk size full
+				else {
+					log.debug(" -- Disk Size Full -- ");
+					stop_flag = true;
+					break;
+				}
+			} catch (Exception ex) {
+				log.error("Proc Call error, " + ex.getMessage());
+				stop_flag = true;
+				break;
+			}
+		}
+
+	}
+
+}

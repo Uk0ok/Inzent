@@ -1,0 +1,176 @@
+package com.ecm.util;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import org.apache.log4j.Logger;
+
+import com.ecm.dto.ecmDto;
+import com.ecm.proc.Proc_Call;
+
+public class DBUtil {
+
+	private static Logger log = Logger.getLogger("main");
+
+	public static Connection getConnection(String driver, String url, String id, String pw) {
+		Connection conn = null;
+		try {
+			Class.forName(driver);
+			conn = DriverManager.getConnection(url, id, pw);
+		} catch (Exception e) {
+			Proc_Call.stop_flag = true;
+			log.error(" DB Connection Error, " + e.getMessage());
+		}
+		try {
+			conn.setAutoCommit(false);
+		} catch (SQLException e) {
+			Proc_Call.stop_flag = true;
+			log.error(" DB Auto Commit set false is Failed, " + e.getMessage());
+		}
+		return conn;
+	}
+
+	public static void ConnectionClose(Connection con) {
+		try {
+			if (con != null) {
+				con.close();
+			}
+		} catch (Exception e) {
+			log.error("Connection Closed Error, " + e.getMessage());
+		}
+
+	}
+
+	public static ArrayList<ecmDto> getEid(int rownum) {
+//		String sSql = "SELECT ELEMENTID FROM M_TABLE WHERE M_STAT = '00' AND ROWNUM <= " + rownum;
+//		String sSql = "SELECT ELEMENTID FROM ASYSCONTENTELEMENT WHERE ELEMENTID LIKE '202211%' AND CHECKSUM IS NULL AND ROWNUM <= " + rownum;
+		String sSql = "SELECT ELEMENTID FROM dbo.TB_OBJECT WHERE ELEMENTID LIKE '2022%' AND ROWNUM <= " + rownum;
+		PreparedStatement psmt = null;
+		ResultSet rs = null;
+		ArrayList<ecmDto> ecmList = new ArrayList<ecmDto>();
+
+		try {
+			psmt = Proc_Call.con.prepareStatement(sSql);
+			rs = psmt.executeQuery(sSql);
+			while (rs.next()) {
+				ecmDto ecmdto = new ecmDto();
+				String eid = rs.getString("ELEMENTID");
+				ecmdto.setEid(eid);
+
+				ecmList.add(ecmdto);
+			}
+
+		} catch (SQLException e) {
+			Proc_Call.stop_flag = true;
+			log.error("Get Elementid Error, " + e.getMessage());
+		}finally {
+			try {
+				psmt.close();
+				rs.close();
+			} catch (SQLException e) {
+				log.error("open cursor close error, " + e.getMessage());
+			}
+		}
+
+		return ecmList;
+	}
+
+	public static void updateStatus(String stat, String eid) {
+		String sSql = "UPDATE ASYSCONTENTELEMENT SET CHECKSUM = ? WHERE ELEMENTID = ?";
+		PreparedStatement psmt = null;
+		int ret = 0;
+
+		try {
+			psmt = Proc_Call.con.prepareStatement(sSql);
+			psmt.setString(1, stat);
+			psmt.setString(2, eid);
+			ret = psmt.executeUpdate();
+
+			if (ret < 1) {
+				log.error(" ExecuteUpdate is Failed, " + "key");
+				Proc_Call.stop_flag = true;
+			}
+		} catch (SQLException e) {
+			log.error("update status Error, " + e.getMessage());
+		}try {
+			psmt.close();
+		} catch (SQLException e) {
+			log.error("open cursor close error, " + e.getMessage());
+		}
+
+	}
+
+	public static ArrayList<ecmDto> getRepEid(int rownum) {
+		// select data
+//		String sSql = "SELECT ELEMENTID FROM MappingTable WHERE condition = ? AND ROWNUM <= " + rownum;
+//		String sSql = "SELECT ELEMENTID FROM ASYSCONTENTELEMENT WHERE ELEMENTID LIKE '202205%' AND ROWNUM <= " + rownum;
+		String sSql = "SELECT ELEMENTID FROM dbo.TB_OBJECT WHERE ELEMENTID LIKE '2022%'";
+		PreparedStatement psmt = null;
+		ResultSet rs = null;
+		ArrayList<ecmDto> ecmList = new ArrayList<ecmDto>();
+
+		// replace process
+		try {
+			psmt = Proc_Call.con.prepareStatement(sSql);
+			rs = psmt.executeQuery(sSql);
+			while (rs.next()) {
+				ecmDto ecmdto = new ecmDto();
+				String eid = rs.getString("ELEMENTID");
+				ecmdto.setEid(eid);
+
+				ecmList.add(ecmdto);
+			}
+
+		} catch (SQLException e) {
+			Proc_Call.stop_flag = true;
+			log.error("Replace Error, " + e.getMessage());
+		}try {
+			psmt.close();
+			rs.close();
+		} catch (SQLException e) {
+			log.error("open cursor close error, " + e.getMessage());
+		}
+
+		// update data
+
+		return ecmList;
+	}
+
+	public static ArrayList<ecmDto> getDelEid(int rownum) {
+		// select data
+//		String sSql = "SELECT ELEMENTID FROM DelMappingTable WHERE condition = ? AND ROWNUM <= " + rownum;
+//		String sSql = "SELECT ELEMENTID FROM ASYSCONTENTELEMENT WHERE ELEMENTID LIKE '202205%' AND ROWNUM <= " + rownum;
+		String sSql = "SELECT ELEMENTID FROM dbo.TB_OBJECT WHERE ELEMENTID LIKE '2022%'";
+		PreparedStatement psmt = null;
+		ResultSet rs = null;
+		ArrayList<ecmDto> ecmList = new ArrayList<ecmDto>();
+
+		try {
+			psmt = Proc_Call.con.prepareStatement(sSql);
+			rs = psmt.executeQuery(sSql);
+			while (rs.next()) {
+				ecmDto ecmdto = new ecmDto();
+				String eid = rs.getString("ELEMENTID");
+				ecmdto.setEid(eid);
+
+				ecmList.add(ecmdto);
+			}
+
+		} catch (SQLException e) {
+			Proc_Call.stop_flag = true;
+			log.error("Get Elementid Error, " + e.getMessage());
+		}try {
+			psmt.close();
+			rs.close();
+		} catch (SQLException e) {
+			log.error("open cursor close error, " + e.getMessage());
+		}
+
+		return ecmList;
+	}
+
+}

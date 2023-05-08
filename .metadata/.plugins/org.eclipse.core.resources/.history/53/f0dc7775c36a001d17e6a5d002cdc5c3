@@ -1,0 +1,99 @@
+package com.ecm.thread;
+
+import java.io.File;
+import java.sql.Connection;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import org.apache.log4j.Logger;
+
+import com.ecm.proc.Proc_Call;
+import com.ecm.proc.Proc_Main;
+import com.ecm.util.DBUtil;
+import com.ecm.util.EcmUtil;
+import com.windfire.apis.asysConnectData;
+
+public class ThreadPool {
+
+	private static Logger log = Logger.getLogger("main");
+	public static Connection con = null;
+	public static asysConnectData xcon = null;
+
+	public ThreadPool() {
+
+	}
+
+	public void Tr_Download(String elementId) {
+		Runnable task = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					// DB Connect
+					con = DBUtil.getConnection(Proc_Main.DB_DRIVER, Proc_Main.DB_URL, Proc_Main.DB_ID, Proc_Main.DB_PW);
+
+					// ECM Connect
+					xcon = new asysConnectData(Proc_Main.ECM_IP, Proc_Main.ECM_PORT, "TestImage", Proc_Main.ECM_ID,	Proc_Main.ECM_PW);
+					
+					if (xcon == null) {
+						log.debug("ECM connection error");
+					}
+					
+					Date date = new Date();
+					SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+					String date_folder = sdf.format(date);
+					
+					String file_path = Proc_Main.DOWNBASEDIR + "/" + date_folder;
+					File d_path = new File(file_path);
+					if(!d_path.exists()) {
+						d_path.mkdirs();
+					}
+
+					// ecm download api
+					EcmUtil ecmapi = new EcmUtil();
+					ecmapi.download(file_path, elementId);
+
+					// db update
+					DBUtil.updateStatus("200", elementId);
+					
+				} catch (Exception e) {
+					DBUtil.updateStatus("300", elementId);
+					DBUtil.updateStatus("300", elementId);
+					log.error("Download Thread Error, " + e.getMessage());
+				}
+
+			}
+		};
+		Proc_Call.executorService.submit(task);
+	}
+
+	public void Tr_Replace(String elementId) {
+		Runnable task = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					String file_path = Proc_Main.REPLACEDIR + "/" + elementId;
+
+					// ecm download api
+					EcmUtil ecmapi = new EcmUtil();
+					EcmUtil.replace(file_path, elementId, Proc_Main.ECM_FILTERNAME, Proc_Main.ECM_FILTERPARAM);
+
+					// db update
+
+				} catch (Exception e) {
+					log.error("Replace Thread Error, " + e.getMessage());
+				}
+
+			}
+		};
+		Proc_Call.executorService.submit(task);
+	}
+	
+
+	public void finish() {
+		Proc_Call.executorService.shutdown();
+		while (!Proc_Call.executorService.isTerminated()) {
+		}
+	}
+
+
+	   
+}

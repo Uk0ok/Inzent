@@ -1,0 +1,26 @@
+package com.ecm.dto;
+public class ecmDto{
+	private String eid =null;
+	private String str1 = null;
+	
+	public static void ecmDto() {}
+
+	public String getEid() {
+		return eid;
+	}
+
+	public void setEid(String eid) {
+		this.eid = eid;
+	}
+
+	public String getStr1() {
+		return str1;
+	}
+
+	public void setStr1(String str1) {
+		this.str1 = str1;
+	}
+	
+	
+	
+}
